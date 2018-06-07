@@ -9,17 +9,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JavaType;
 
-import io.swagger.jaxrs.DefaultParameterExtension;
-import io.swagger.jaxrs.ext.SwaggerExtension;
-import io.swagger.models.parameters.Parameter;
+import io.swagger.v3.jaxrs2.ResolvedParameter;
+import io.swagger.v3.jaxrs2.ext.OpenAPIExtension;
+import io.swagger.v3.oas.models.Components;
 
 /**
  * @author jbauer
  *
  */
-public class ServerParameterExtension extends DefaultParameterExtension
+public class ServerParameterExtension extends io.swagger.v3.jaxrs2.DefaultParameterExtension
 {
 
 	public ServerParameterExtension()
@@ -29,7 +30,15 @@ public class ServerParameterExtension extends DefaultParameterExtension
 	}
  
 	@Override
-	public List<Parameter> extractParameters(List<Annotation> annotations, Type type, Set<Type> typesToSkip, Iterator<SwaggerExtension> chain)
+	  public ResolvedParameter extractParameters(List<Annotation> annotations,
+	                                               Type type,
+	                                               Set<Type> typesToSkip,
+	                                               Components components,
+	                                               javax.ws.rs.Consumes classConsumes,
+	                                               javax.ws.rs.Consumes methodConsumes,
+	                                               boolean includeRequestBody,
+	                                               JsonView jsonViewAnnotation,
+	                                               Iterator<OpenAPIExtension> chain)
 	{
  
 		if(type.getTypeName().contains("java.nio.ByteBuffer") || type.getTypeName().contains("java.nio.file.Path"))
@@ -38,8 +47,9 @@ public class ServerParameterExtension extends DefaultParameterExtension
  
 	      } 
 		 
-		return  super.extractParameters(annotations, type, typesToSkip, chain);
+		ResolvedParameter parameter =  super.extractParameters(annotations, type, typesToSkip, components, classConsumes, methodConsumes, includeRequestBody, jsonViewAnnotation, chain);
 	  
+		return parameter;
 	}
 
  

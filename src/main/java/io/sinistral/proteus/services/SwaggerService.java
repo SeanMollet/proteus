@@ -22,7 +22,6 @@ import java.util.jar.JarFile;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MediaType;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,12 +40,12 @@ import com.typesafe.config.ConfigObject;
 import io.sinistral.proteus.server.endpoints.EndpointInfo;
 import io.sinistral.proteus.server.security.MapIdentityManager;
 import io.sinistral.proteus.server.swagger.ServerParameterExtension;
-import io.swagger.jaxrs.ext.SwaggerExtension;
-import io.swagger.jaxrs.ext.SwaggerExtensions;
-import io.swagger.models.Info;
-import io.swagger.models.Swagger;
-import io.swagger.models.auth.ApiKeyAuthDefinition;
-import io.swagger.models.auth.BasicAuthDefinition;
+import io.swagger.v3.jaxrs2.ext.OpenAPIExtension;
+import io.swagger.v3.jaxrs2.ext.OpenAPIExtensions;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.servers.Server;
 import io.undertow.attribute.ExchangeAttribute;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicate;
@@ -68,9 +67,10 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.util.CanonicalPathUtils;
+import io.undertow.util.FileUtils;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
-import io.undertow.util.Methods;
+import io.undertow.util.Methods; 
 
 
  
@@ -116,6 +116,10 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 	protected String host;
 	
 	@Inject
+	@Named("swagger.scheme")
+	protected String scheme;
+	
+	@Inject
 	@Named("application.name")
 	protected String applicationName;
 	
@@ -150,9 +154,9 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 	
 	protected ClassLoader serviceClassLoader = null;
 	
-	protected Swagger swagger = null;
+	protected OpenAPI openAPI = null;
 	
-	protected String swaggerSpec = null;
+	protected String openAPISpec = null;
 	
 	protected String swaggerIndexHTML = null;
 	
@@ -180,20 +184,22 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 		
 		Set<Class<?>> classes = this.registeredControllers;
 		
-		List<SwaggerExtension> extensions = new ArrayList<>();
+		List<OpenAPIExtension> extensions = new ArrayList<>();
 		
 		extensions.add(new ServerParameterExtension());
 
-		SwaggerExtensions.setExtensions(extensions);
+		OpenAPIExtensions.setExtensions(extensions);
 
-		log.debug("Added SwaggerExtension: ServerParameterExtension");
+		log.debug("Added OpenAPIExtension: ServerParameterExtension");
 		 
-		Swagger swagger = new Swagger();
+		OpenAPI openAPI = new OpenAPI();
 		
-		swagger.setBasePath(applicationPath);
+		Server server = new Server();
 		
-		swagger.setHost(host+((port != 80 && port != 443) ? ":" + port : ""));
+		server.setDescription("Proteus Server");
 		
+		server.setUrl(scheme + "://" + host+((port != 80 && port != 443) ? ":" + port : "") + applicationPath);
+	  
 		Info info = new Info();
 		
 		if(swaggerInfo.hasPath("title"))
@@ -211,7 +217,7 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 			info.description(swaggerInfo.getString("description"));
 		}
 		
-		swagger.setInfo(info);
+		openAPI.setInfo(info);
 		
 		if(swaggerSecurity.hasPath("apiKeys"))
 		{
@@ -225,7 +231,7 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 				String name = apiKeyConfig.getString("name");
 				String value = apiKeyConfig.getString("value");
 				
-				io.swagger.models.auth.In keyLocation = io.swagger.models.auth.In.valueOf(apiKeyConfig.getString("in"));
+				io.swagger.v3.oas.models.security.SecurityScheme.In keyLocation = io.swagger.v3.oas.models.security.SecurityScheme.In.valueOf(apiKeyConfig.getString("in"));
 				
 				final Predicate predicate;
 				
@@ -260,8 +266,14 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 						} 
 					};
 					
-					ApiKeyAuthDefinition keyAuthDefinition = new ApiKeyAuthDefinition(name, keyLocation);
-					swagger.addSecurityDefinition(key, keyAuthDefinition);
+					SecurityRequirement requirement = new SecurityRequirement();
+					
+					requirement.put("name", Collections.singletonList(name));
+					requirement.put("key", Collections.singletonList(key));
+					requirement.put("value", Collections.singletonList(value));
+					
+					openAPI.addSecurityItem(requirement);
+
 					
 					registeredHandlerWrappers.put(key, wrapper);
 				} 
@@ -307,8 +319,15 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 					} 
 				};
 				
-				BasicAuthDefinition authDefinition = new BasicAuthDefinition();
-				swagger.addSecurityDefinition(name, authDefinition);
+ 				
+				
+ 				
+				SecurityRequirement requirement = new SecurityRequirement();
+				
+				requirement.put("name", Collections.singletonList(name));
+				requirement.put("identities", identities);
+				
+				openAPI.addSecurityItem(requirement);
 				
 				registeredHandlerWrappers.put(name, wrapper);
 				
@@ -316,18 +335,18 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 		}
 
 
-		this.reader = new io.sinistral.proteus.server.swagger.Reader(swagger);
+		this.reader = new io.sinistral.proteus.server.swagger.Reader(openAPI);
  
 		classes.forEach( c -> this.reader.read(c));
 		
-		this.swagger = this.reader.getSwagger();
+		this.openAPI = this.reader.getOpenAPI();
 		
 
 		
 		try
 		{
 			
-			this.swaggerSpec = writer.writeValueAsString(this.swagger);
+			this.openAPISpec = writer.writeValueAsString(this.openAPI);
 			
 		} catch (Exception e)
 		{
@@ -338,15 +357,15 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 	}
 
  
-	public Swagger getSwagger()
+	public OpenAPI getOpenAPI()
 	{
-		return swagger;
+		return openAPI;
 	}
 
  
-	public void setSwagger(Swagger swagger)
+	public void setOpenAPI(OpenAPI openAPI)
 	{
-		this.swagger = swagger;
+		this.openAPI = openAPI;
 	}
 	
 	public void generateSwaggerHTML()
@@ -412,7 +431,8 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 						
 						try
 						{
-							FileUtils.deleteDirectory(swaggerTmpDir.toFile());
+							
+							FileUtils.deleteRecursive(swaggerTmpDir);
 
 						} catch (java.lang.IllegalArgumentException e)
 						{
@@ -474,7 +494,7 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 			{
  
 				exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, MediaType.APPLICATION_JSON); 
-				exchange.getResponseSender().send(swaggerSpec);
+				exchange.getResponseSender().send(openAPISpec);
 				
 			}
 			
@@ -596,7 +616,7 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 		this.generateSwaggerSpec();
 		this.generateSwaggerHTML();
  
-		log.debug("\nSwagger Spec:\n" +  writer.writeValueAsString(this.swagger));
+		log.debug("\nSwagger Spec:\n" +  writer.writeValueAsString(this.openAPI));
 
 		router.addAll(this.get()); 
 	}

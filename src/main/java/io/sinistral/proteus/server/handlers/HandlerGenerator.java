@@ -58,8 +58,10 @@ import io.sinistral.proteus.server.Extractors;
 import io.sinistral.proteus.server.ServerRequest;
 import io.sinistral.proteus.server.ServerResponse;
 import io.sinistral.proteus.server.endpoints.EndpointInfo;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -625,13 +627,13 @@ public class HandlerGenerator
 
 		MethodSpec.Builder initBuilder = MethodSpec.methodBuilder("get").addModifiers(Modifier.PUBLIC).returns(RoutingHandler.class).addStatement("final $T router = new $T()", io.undertow.server.RoutingHandler.class, io.undertow.server.RoutingHandler.class);
 
-		final Map<Type, String> parameterizedLiteralsNameMap = Arrays.stream(clazz.getDeclaredMethods()).filter( m -> m.getAnnotation(ApiOperation.class) != null).flatMap(m -> Arrays.stream(m.getParameters()).map(Parameter::getParameterizedType).filter(t -> t.getTypeName().contains("<") && !t.getTypeName().contains("concurrent")))
+		final Map<Type, String> parameterizedLiteralsNameMap = Arrays.stream(clazz.getDeclaredMethods()).filter( m -> m.getAnnotation(Operation.class) != null).flatMap(m -> Arrays.stream(m.getParameters()).map(Parameter::getParameterizedType).filter(t -> t.getTypeName().contains("<") && !t.getTypeName().contains("concurrent")))
 				.distinct().filter(t -> {
 					TypeHandler handler = TypeHandler.forType(t);
 					return (handler.equals(TypeHandler.ModelType) || handler.equals(TypeHandler.OptionalModelType));
 				}).collect(Collectors.toMap(java.util.function.Function.identity(), HandlerGenerator::typeLiteralNameForParameterizedType));
 
-		final Map<Type, String> literalsNameMap = Arrays.stream(clazz.getDeclaredMethods()).filter( m -> m.getAnnotation(ApiOperation.class) != null).flatMap(m -> Arrays.stream(m.getParameters()).map(Parameter::getParameterizedType)).filter(t -> {
+		final Map<Type, String> literalsNameMap = Arrays.stream(clazz.getDeclaredMethods()).filter( m -> m.getAnnotation(Operation.class) != null).flatMap(m -> Arrays.stream(m.getParameters()).map(Parameter::getParameterizedType)).filter(t -> {
 
 			if (t.getTypeName().contains("java.util"))
 			{
@@ -729,24 +731,26 @@ public class HandlerGenerator
 		 * Controller Level Authorization
 		 */
 		
-		List<String> typeLevelSecurityDefinitions = new ArrayList<>();
-		
-		if( Optional.ofNullable(clazz.getAnnotation(io.swagger.annotations.Api.class)).isPresent() )
+		List<SecurityScheme> classSecuritySchemes = new ArrayList<>();
+		List<SecurityRequirement> classSecurityRequirements = new ArrayList<>();
+
+		if( Optional.ofNullable(clazz.getAnnotation(Tag.class)).isPresent() )
 		{
-			io.swagger.annotations.Api apiAnnotation = clazz.getAnnotation(io.swagger.annotations.Api.class);
+			Tag apiAnnotation = clazz.getAnnotation(Tag.class);
 			
-			io.swagger.annotations.Authorization[] authorizationAnnotations = apiAnnotation.authorizations();
-			
-			if(authorizationAnnotations.length > 0)
+			if( Optional.ofNullable(clazz.getAnnotation(SecurityScheme.class)).isPresent() )
 			{
-				for(io.swagger.annotations.Authorization authorizationAnnotation: authorizationAnnotations )
-				{
-					if(authorizationAnnotation.value().length() > 0)
-					{
-						typeLevelSecurityDefinitions.add(authorizationAnnotation.value());
-					}
-				}
-			} 
+				SecurityScheme scheme = clazz.getAnnotation(SecurityScheme.class);
+				classSecuritySchemes.add(scheme);
+			}
+			
+			if( Optional.ofNullable(clazz.getAnnotation(SecurityRequirement.class)).isPresent() )
+			{
+				SecurityRequirement requirement = clazz.getAnnotation(SecurityRequirement.class);
+				classSecurityRequirements.add(requirement);
+			}
+			
+			 
 		}
 
 		for (Method m : clazz.getDeclaredMethods())
@@ -1112,33 +1116,26 @@ public class HandlerGenerator
 			 * Authorization
 			 */
 			
-			List<String> securityDefinitions = new ArrayList<>();
-			
+		 	
 			/*
 			 * @TODO wrap blocking in BlockingHandler
 			 */
 			
  			
-			if( Optional.ofNullable(m.getAnnotation(io.swagger.annotations.ApiOperation.class)).isPresent() )
+			List<SecurityRequirement> methodSecurityRequirements = new ArrayList<>();
+			
+			if( Optional.ofNullable(m.getAnnotation(SecurityRequirement.class)).isPresent() )
 			{
-				io.swagger.annotations.ApiOperation apiOperationAnnotation = m.getAnnotation(io.swagger.annotations.ApiOperation.class);
+				SecurityRequirement requirement = m.getAnnotation(SecurityRequirement.class);
 				
-				io.swagger.annotations.Authorization[] authorizationAnnotations = apiOperationAnnotation.authorizations();
-				if(authorizationAnnotations.length > 0)
-				{
-					for(io.swagger.annotations.Authorization authorizationAnnotation: authorizationAnnotations )
-					{
-						if(authorizationAnnotation.value().length() > 0)
-						{
-							securityDefinitions.add(authorizationAnnotation.value());
-						}
-					}
-				} 
+				 
+				methodSecurityRequirements.add(requirement);
+				 
 			}
 			
-			if(securityDefinitions.isEmpty())
+			if(methodSecurityRequirements.isEmpty())
 			{
-				securityDefinitions.addAll(typeLevelSecurityDefinitions);
+				classSecurityRequirements.addAll(classSecurityRequirements);
 			}
 
 			if(isBlocking)
@@ -1146,7 +1143,7 @@ public class HandlerGenerator
 				handlerName = "new io.undertow.server.handlers.BlockingHandler(" + handlerName + ")";
 			}
 			
-			if (wrapAnnotation.isPresent() || typeLevelHandlerWrapperMap.size() > 0 || securityDefinitions.size() > 0)
+			if (wrapAnnotation.isPresent() || typeLevelHandlerWrapperMap.size() > 0 || methodSecurityRequirements.size() > 0)
 			{
 				initBuilder.addStatement("currentHandler = $L", handlerName);
 
@@ -1179,9 +1176,9 @@ public class HandlerGenerator
 					initBuilder.addStatement("currentHandler = $L.wrap($L)", wrapperName, "currentHandler");
 				} 
 				
-				for (String securityDefinitionName : securityDefinitions)
+				for (SecurityRequirement requirement : methodSecurityRequirements)
 				{
-					initBuilder.addStatement("currentHandler = registeredHandlerWrappers.get($S).wrap($L)", securityDefinitionName, "currentHandler");
+					initBuilder.addStatement("currentHandler = registeredHandlerWrappers.get($S).wrap($L)", requirement.name(), "currentHandler");
 				} 
 
 				initBuilder.addStatement("$L.add(io.undertow.util.Methods.$L,$S,$L)", "router", httpMethod, methodPath, "currentHandler");
@@ -1273,7 +1270,7 @@ public class HandlerGenerator
 	{
 
 		Reflections ref = new Reflections(basePath);
-		Stream<Class<?>> stream = ref.getTypesAnnotatedWith(Api.class).stream();
+		Stream<Class<?>> stream = ref.getTypesAnnotatedWith(Tag.class).stream();
 
 		if (pathPredicate != null)
 		{

@@ -4,21 +4,30 @@
 package io.sinistral.proteus.server.swagger;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Parameter;
 
 import javax.ws.rs.FormParam;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.Example;
+import io.swagger.v3.oas.annotations.ExternalDocumentation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.Explode;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.enums.ParameterStyle;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 
 /**
  * @author jbauer
  */
 public class AnnotationHelper
 {
-	public static FormParam createFormParam(Parameter parameter)
+	public static FormParam createFormParam(java.lang.reflect.Parameter parameter)
 	{
 
 		return new FormParam()
@@ -39,7 +48,7 @@ public class AnnotationHelper
 		};
 	}
 
-	public static QueryParam createQueryParam(Parameter parameter)
+	public static QueryParam createQueryParam(java.lang.reflect.Parameter parameter)
 	{
 
 		return new QueryParam()
@@ -59,7 +68,7 @@ public class AnnotationHelper
 		};
 	}
 
-	public static PathParam createPathParam(Parameter parameter)
+	public static PathParam createPathParam(java.lang.reflect.Parameter parameter)
 	{
 
 		return new PathParam()
@@ -79,17 +88,17 @@ public class AnnotationHelper
 		};
 	}
 
-	public static ApiParam createApiParam(Parameter parameter)
+	public static Parameter createApiParam(java.lang.reflect.Parameter parameter)
 	{
 
-		return new ApiParam()
+		return new Parameter()
 		{
 
 			@Override
 			public Class<? extends Annotation> annotationType()
 			{
 				// TODO Auto-generated method stub
-				return ApiParam.class;
+				return Parameter.class;
 			}
 
 			@Override
@@ -98,46 +107,12 @@ public class AnnotationHelper
 				return parameter.getName();
 			}
 
-			@Override
-			public String value()
-			{
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public String defaultValue()
-			{
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public String allowableValues()
-			{
-				// TODO Auto-generated method stub
-				return null;
-			}
-
+		  
 			@Override
 			public boolean required()
 			{
 				return !parameter.getParameterizedType().getTypeName().contains("java.util.Optional");
-			}
-
-			@Override
-			public String access()
-			{
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public boolean allowMultiple()
-			{
-				// TODO Auto-generated method stub
-				return false;
-			}
+			} 
 
 			@Override
 			public boolean hidden()
@@ -154,25 +129,19 @@ public class AnnotationHelper
 			}
 
 			@Override
-			public Example examples()
+			public ExampleObject[] examples()
 			{
 				// TODO Auto-generated method stub
 				return null;
 			}
 
 			@Override
-			public String type()
+			public ParameterIn in()
 			{
 				// TODO Auto-generated method stub
 				return null;
 			}
-
-			@Override
-			public String format()
-			{
-				// TODO Auto-generated method stub
-				return null;
-			}
+ 
 
 			@Override
 			public boolean allowEmptyValue()
@@ -181,19 +150,367 @@ public class AnnotationHelper
 				return false;
 			}
 
+			/* (non-Javadoc)
+			 * @see io.swagger.v3.oas.annotations.Parameter#description()
+			 */
 			@Override
-			public boolean readOnly()
+			public String description()
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			/* (non-Javadoc)
+			 * @see io.swagger.v3.oas.annotations.Parameter#deprecated()
+			 */
+			@Override
+			public boolean deprecated()
 			{
 				// TODO Auto-generated method stub
 				return false;
 			}
 
+			/* (non-Javadoc)
+			 * @see io.swagger.v3.oas.annotations.Parameter#style()
+			 */
 			@Override
-			public String collectionFormat()
+			public ParameterStyle style()
 			{
 				// TODO Auto-generated method stub
 				return null;
 			}
+
+			/* (non-Javadoc)
+			 * @see io.swagger.v3.oas.annotations.Parameter#explode()
+			 */
+			@Override
+			public Explode explode()
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			/* (non-Javadoc)
+			 * @see io.swagger.v3.oas.annotations.Parameter#allowReserved()
+			 */
+			@Override
+			public boolean allowReserved()
+			{
+				// TODO Auto-generated method stub
+				return false;
+			}
+
+			/* (non-Javadoc)
+			 * @see io.swagger.v3.oas.annotations.Parameter#schema()
+			 */
+			@Override
+			public Schema schema()
+			{
+				return new Schema(){
+
+					@Override
+					public Class<? extends Annotation> annotationType()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public Class<?> implementation()
+					{ 
+						if(parameter.getType().getTypeName().contains("java.util.List"))
+						{
+							return null;
+						}
+						
+						return parameter.getType();
+					}
+
+					@Override
+					public Class<?> not()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public Class<?>[] oneOf()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public Class<?>[] anyOf()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public Class<?>[] allOf()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public String name()
+					{
+						return parameter.getType().getSimpleName();
+					}
+
+					@Override
+					public String title()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public double multipleOf()
+					{
+						// TODO Auto-generated method stub
+						return 0;
+					}
+
+					@Override
+					public String maximum()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public boolean exclusiveMaximum()
+					{
+						// TODO Auto-generated method stub
+						return false;
+					}
+
+					@Override
+					public String minimum()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public boolean exclusiveMinimum()
+					{
+						// TODO Auto-generated method stub
+						return false;
+					}
+
+					@Override
+					public int maxLength()
+					{
+						// TODO Auto-generated method stub
+						return 0;
+					}
+
+					@Override
+					public int minLength()
+					{
+						// TODO Auto-generated method stub
+						return 0;
+					}
+
+					@Override
+					public String pattern()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public int maxProperties()
+					{
+						// TODO Auto-generated method stub
+						return 0;
+					}
+
+					@Override
+					public int minProperties()
+					{
+						// TODO Auto-generated method stub
+						return 0;
+					}
+
+					@Override
+					public String[] requiredProperties()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public boolean required()
+					{
+						// TODO Auto-generated method stub
+						return false;
+					}
+
+					@Override
+					public String description()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public String format()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public String ref()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public boolean nullable()
+					{
+						// TODO Auto-generated method stub
+						return false;
+					}
+
+					@Override
+					public boolean readOnly()
+					{
+						// TODO Auto-generated method stub
+						return false;
+					}
+
+					@Override
+					public boolean writeOnly()
+					{
+						// TODO Auto-generated method stub
+						return false;
+					}
+
+					@Override
+					public AccessMode accessMode()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public String example()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public ExternalDocumentation externalDocs()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public boolean deprecated()
+					{
+						// TODO Auto-generated method stub
+						return false;
+					}
+
+					@Override
+					public String type()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public String[] allowableValues()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public String defaultValue()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public String discriminatorProperty()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public DiscriminatorMapping[] discriminatorMapping()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public boolean hidden()
+					{
+						// TODO Auto-generated method stub
+						return false;
+					}
+
+					@Override
+					public Class<?>[] subTypes()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+
+					@Override
+					public Extension[] extensions()
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
+					
+				};
+			}
+
+			/* (non-Javadoc)
+			 * @see io.swagger.v3.oas.annotations.Parameter#array()
+			 */
+			@Override
+			public ArraySchema array()
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			/* (non-Javadoc)
+			 * @see io.swagger.v3.oas.annotations.Parameter#content()
+			 */
+			@Override
+			public Content[] content()
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			/* (non-Javadoc)
+			 * @see io.swagger.v3.oas.annotations.Parameter#extensions()
+			 */
+			@Override
+			public Extension[] extensions()
+			{
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+		 
 
 		};
 	}
