@@ -1,7 +1,7 @@
 /**
  * 
  */
-package io.sinistral.proteus.controllers;
+package io.sinistral.proteus.tests.controllers;
 
 import static io.sinistral.proteus.server.ServerResponse.response;
 
@@ -30,19 +30,22 @@ import com.google.common.io.Files;
 import com.google.inject.Singleton;
 import com.jsoniter.output.JsonStream;
 
-import io.sinistral.proteus.models.User;
 import io.sinistral.proteus.server.ServerRequest;
 import io.sinistral.proteus.server.ServerResponse;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.sinistral.proteus.tests.models.TestUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.undertow.server.HttpServerExchange;
 
 /**
  * @author jbauer
  *
  */
-@Api(tags="tests")
+@Tag(name="tests")
 @Path("/tests")
 @Produces((MediaType.APPLICATION_JSON)) 
 @Consumes((MediaType.MEDIA_TYPE_WILDCARD)) 
@@ -60,7 +63,7 @@ public class Tests
 	  
 	@GET
 	@Path("/exchange/json/serialize")
-	@ApiOperation(value = "Json serialization endpoint",   httpMethod = "GET" )
+	@Operation(summary = "Json serialization endpoint",   method = "GET" )
 	public void exchangeJsonSerialize(HttpServerExchange exchange)
 	{ 
 		response( JsonStream.serialize(ImmutableMap.of("message", "Hello, World!")) ).applicationJson().send(exchange);
@@ -68,7 +71,7 @@ public class Tests
 	
 	@GET
 	@Path("/exchange/json/serializeToBytes")
-	@ApiOperation(value = "Json serialization with bytes endpoint",   httpMethod = "GET" )
+	@Operation(summary = "Json serialization with bytes endpoint",   method = "GET" )
 	public void exchangeJsonSerializeToBytes(HttpServerExchange exchange)
 	{ 
 		response( JsonStream.serializeToBytes(ImmutableMap.of("message", "Hello, World!")) ).applicationJson().send(exchange);
@@ -78,27 +81,31 @@ public class Tests
 	
 	@GET 
 	@Path("/exchange/user/json")
-	@ApiOperation(value = "User serialization endpoint",   httpMethod = "GET", response = User.class )
+	@Operation(summary = "User serialization endpoint",   method = "GET", responses = { @ApiResponse(
+	                                                                                                 content = @Content(mediaType = "application/json",
+	                                                                                                 schema = @Schema(implementation = TestUser.class)) ) } )
 	public void exchangeUserJson(HttpServerExchange exchange)
 	{  
-		response( new User(123L) ).applicationJson().send(exchange); 
+		response( new TestUser(123L) ).applicationJson().send(exchange); 
 	}
 	
 	@GET 
 	@Path("/exchange/user/xml")
 	@Produces((MediaType.APPLICATION_XML))
-	@ApiOperation(value = "User serialization endpoint",   httpMethod = "GET", response = User.class )
+	@Operation(summary = "User serialization endpoint",   method = "GET", responses = { @ApiResponse(
+	                                                                                                 content = @Content(mediaType=MediaType.APPLICATION_XML,
+	                                                                                                 schema = @Schema(implementation = TestUser.class)) ) } )
 	public void exchangeUserXml(HttpServerExchange exchange)
 	{  
-		response( new User(123L) ).applicationXml().send(exchange); 
+		response( new TestUser(123L) ).applicationXml().send(exchange); 
 	}
 
 	@GET
 	@Path("/response/user/json")
-	@ApiOperation(value = "User serialization endpoint",   httpMethod = "GET" )
-	public ServerResponse<User> responseUserJson(ServerRequest request)
+	@Operation(summary = "User serialization endpoint",   method = "GET",  responses={@ApiResponse(description="The user",content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = TestUser.class)))} )
+	public ServerResponse<TestUser> responseUserJson(ServerRequest request)
 	{ 
- 		User user = new User(123L);
+ 		TestUser user = new TestUser(123L);
 		 
 		return response( user ).applicationJson(); 
 	}
@@ -106,10 +113,10 @@ public class Tests
 	@GET
 	@Path("/response/user/xml")
 	@Produces((MediaType.APPLICATION_XML))
-	@ApiOperation(value = "User serialization endpoint",   httpMethod = "GET" )
-	public ServerResponse<User> responseUserXml(ServerRequest request)
+	@Operation(summary = "User serialization endpoint",   method = "GET", responses={@ApiResponse(description="The user",content = @Content(mediaType = MediaType.APPLICATION_XML, schema = @Schema(implementation = TestUser.class)))} )
+	public ServerResponse<TestUser> responseUserXml(ServerRequest request)
 	{ 
- 		User user = new User(123L);
+ 		TestUser user = new TestUser(123L);
 		 
 		return response( user ).applicationXml(); 
 	}
@@ -118,7 +125,7 @@ public class Tests
 	@GET
 	@Path("/exchange/plaintext")
 	@Produces((MediaType.TEXT_PLAIN)) 
-	@ApiOperation(value = "Plaintext endpoint",   httpMethod = "GET" )
+	@Operation(summary = "Plaintext endpoint",   method = "GET" )
 	public void exchangePlaintext(HttpServerExchange exchange)
 	{ 
 		response("Hello, World!").textPlain().send(exchange);
@@ -128,7 +135,7 @@ public class Tests
 	@GET
 	@Path("/exchange/plaintext2")
 	@Produces((MediaType.TEXT_PLAIN)) 
-	@ApiOperation(value = "Plaintext endpoint 2",   httpMethod = "GET" )
+	@Operation(summary = "Plaintext endpoint 2",   method = "GET" )
 	public void exchangePlaintext2(HttpServerExchange exchange)
 	{ 
 		exchange.getResponseHeaders().put(io.undertow.util.Headers.CONTENT_TYPE, "text/plain");
@@ -138,7 +145,7 @@ public class Tests
 	@GET
 	@Path("/response/plaintext")
 	@Produces((MediaType.TEXT_PLAIN)) 
-	@ApiOperation(value = "Plaintext endpoint",   httpMethod = "GET" )
+	@Operation(summary = "Plaintext endpoint",   method = "GET" )
 	public ServerResponse<ByteBuffer> responsePlaintext(ServerRequest request)
 	{ 
 		return response("Hello, World!").textPlain();
@@ -147,7 +154,7 @@ public class Tests
 	
 	@GET
 	@Path("/response/future/map")
-	@ApiOperation(value = "Future map endpoint",   httpMethod = "GET" )
+	@Operation(summary = "Future map endpoint",   method = "GET" )
 	public CompletableFuture<ServerResponse<ImmutableMap<String,String>>> responseFutureMap()
 	{ 
 		return CompletableFuture.completedFuture(response( ImmutableMap.of("message", "success") ).applicationJson());
@@ -157,7 +164,7 @@ public class Tests
 	@Path("/response/file/path")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM) 
  	@Consumes("*/*")
-	@ApiOperation(value = "Upload file path endpoint",   httpMethod = "POST" )
+	@Operation(summary = "Upload file path endpoint",   method = "POST" )
 	public ServerResponse<ByteBuffer> responseUploadFilePath(ServerRequest request, @FormParam("file") java.nio.file.Path file ) throws Exception
 	{  
 		return response(ByteBuffer.wrap(Files.toByteArray(file.toFile()))).applicationOctetStream(); 
@@ -167,8 +174,8 @@ public class Tests
 	@Path("/response/json/echo")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM) 
  	@Consumes("*/*")
-	@ApiOperation(value = "Echo json endpoint",   httpMethod = "POST" )
-	public ServerResponse<User> responseEchoJson(ServerRequest request, @FormParam("user") User user ) throws Exception
+	@Operation(summary = "Echo json endpoint",   method = "POST", responses={@ApiResponse(description="The user",content = @Content(schema = @Schema(implementation = TestUser.class)))} )
+	public ServerResponse<TestUser> responseEchoJson(ServerRequest request, @FormParam("user") TestUser user ) throws Exception
 	{  
 		return response(user).applicationJson();
 	}
@@ -177,7 +184,7 @@ public class Tests
 	@Path("/response/file/bytebuffer")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM) 
  	@Consumes("*/*")
-	@ApiOperation(value = "Upload file path endpoint",   httpMethod = "POST" )
+	@Operation(summary = "Upload file path endpoint",   method = "POST" )
 	public ServerResponse<ByteBuffer> responseUploadByteBuffer(ServerRequest request, @FormParam("file") ByteBuffer file ) throws Exception
 	{ 
 		 
@@ -188,28 +195,28 @@ public class Tests
 	
 	@GET
 	@Path("/response/future/user")
-	@ApiOperation(value = "Future user endpoint",   httpMethod = "GET" )
-	public CompletableFuture<ServerResponse<User>> responseFutureUser()
+	@Operation(summary = "Future user endpoint",   method = "GET" )
+	public CompletableFuture<ServerResponse<TestUser>> responseFutureUser()
 	{ 
-		return CompletableFuture.completedFuture(response( new User(123L) ).applicationJson() );
+		return CompletableFuture.completedFuture(response( new TestUser(123L) ).applicationJson() );
 	}
 	
 	@GET
 	@Path("/response/parameters/complex/{pathLong}")
-	@ApiOperation(value = "Complex parameters", httpMethod = "GET")
+	@Operation(summary = "Complex parameters", method = "GET")
 	public ServerResponse<Map<String,Object>> complexParameters(
 	                    final ServerRequest serverRequest, 
 	                    @PathParam("pathLong") final Long pathLong, 
 	                    @QueryParam("optionalQueryString")  Optional<String> optionalQueryString, 
 	                    @QueryParam("optionalQueryLong")  Optional<Long> optionalQueryLong, 
-	                    @QueryParam("optionalQueryDate") @ApiParam(format="date")  Optional<OffsetDateTime>  optionalQueryDate, 
+	                    @QueryParam("optionalQueryDate") @Parameter( schema=@Schema(type="string",format="date-time",implementation=OffsetDateTime.class))  Optional<OffsetDateTime>  optionalQueryDate, 
 	                    @QueryParam("optionalQueryUUID") Optional<UUID> optionalQueryUUID, 
 	                    @HeaderParam("optionalHeaderUUID") Optional<UUID> optionalHeaderUUID,
-	                    @QueryParam("optionalQueryEnum") Optional<User.UserType> optionalQueryEnum,
+	                    @QueryParam("optionalQueryEnum") Optional<TestUser.UserType> optionalQueryEnum,
 	                    @HeaderParam("optionalHeaderString") Optional<String> optionalHeaderString,
 	                    @QueryParam("queryUUID") UUID queryUUID,  
 	                    @HeaderParam("headerString") String headerString,
- 	                    @QueryParam("queryEnum") User.UserType queryEnum, 
+ 	                    @QueryParam("queryEnum") TestUser.UserType queryEnum, 
 	                    @QueryParam("queryIntegerList")    List<Integer>  queryIntegerList, 
 	                    @QueryParam("queryLong")   Long  queryLong
  	                    

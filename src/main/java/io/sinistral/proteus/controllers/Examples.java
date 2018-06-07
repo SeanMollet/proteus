@@ -1,10 +1,9 @@
 /**
  * 
  */
-package io.sinistral.example.controllers;
+package io.sinistral.proteus.controllers;
 
-import static io.sinistral.proteus.server.ServerResponse.response;
-
+ 
 import java.nio.ByteBuffer;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -68,7 +67,7 @@ public class Examples
 	@Operation(summary="Plaintext endpoint",   method = "GET",  responses={@ApiResponse(description="The text")}  )
 	public void plaintext(HttpServerExchange exchange)
 	{ 
-		io.sinistral.proteus.server.ServerResponse.response("Hello, World!").contentType(MediaType.TEXT_PLAIN).send(exchange);
+		ServerResponse.response("Hello, World!").contentType(MediaType.TEXT_PLAIN).send(exchange);
 	}
 	
 	
@@ -77,16 +76,16 @@ public class Examples
 	@Operation(summary="Json serialization endpoint",   method = "GET", responses={@ApiResponse(description="The json message")} )
 	public void json(HttpServerExchange exchange)
 	{ 
-		io.sinistral.proteus.server.ServerResponse.response( JsonStream.serializeToBytes(ImmutableMap.of("message", "Hello, World!")) ).applicationJson().send(exchange);
+		ServerResponse.response( JsonStream.serializeToBytes(ImmutableMap.of("message", "Hello, World!")) ).applicationJson().send(exchange);
 	}
 	
 	@GET
 	@Path("/echo")
 	@Produces((MediaType.TEXT_PLAIN)) 
 	@Operation(summary="Echo a message",   method = "GET", responses={@ApiResponse(description="The message")} )
-	public io.sinistral.proteus.server.ServerResponse<ByteBuffer> echo(String message)
+	public ServerResponse<ByteBuffer> echo(String message)
 	{ 
-		return io.sinistral.proteus.server.ServerResponse.response(message).contentType(MediaType.TEXT_PLAIN);
+		return ServerResponse.response(message).contentType(MediaType.TEXT_PLAIN);
 	}
  
 	 
@@ -129,6 +128,6 @@ public class Examples
 		responseMap.put("pathLong", pathLong);
 		responseMap.put("headerString", headerString); 
 		responseMap.put("queryIntegerList", queryIntegerList); 
-		return response(responseMap).applicationJson(); 
+		return ServerResponse.response(responseMap).applicationJson(); 
 	}
 }

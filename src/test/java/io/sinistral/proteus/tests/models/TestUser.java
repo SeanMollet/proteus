@@ -1,14 +1,15 @@
 /**
  * 
  */
-package io.sinistral.proteus.models;
+package io.sinistral.proteus.tests.models;
 
- 
+import io.sinistral.proteus.models.User;
+
 /**
  * @author jbauer
  *
  */
-public class User
+public class TestUser
 {
  
 	public enum UserType
@@ -21,17 +22,17 @@ public class User
 	
 	private UserType type = UserType.GUEST;
 
-	public User()
+	public TestUser()
 	{
 		
 	}
 	
-	public User(Long id)
+	public TestUser(Long id)
 	{
 		this.id = id;
 	}
 	
-	public User(Long id, UserType type)
+	public TestUser(Long id, UserType type)
 	{
 		this.id = id;
 		this.type = type;
@@ -79,9 +80,9 @@ public class User
 		return type;
 	}
 	
-	public static User generateUser()
+	public static TestUser generateUser()
 	{
-		return new User((long)(Math.random()*1000)+1L, UserType.ADMIN);
+		return new TestUser((long)(Math.random()*1000)+1L, UserType.ADMIN);
 	}
 	
 }

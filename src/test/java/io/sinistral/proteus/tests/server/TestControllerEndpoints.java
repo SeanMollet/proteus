@@ -1,7 +1,7 @@
 /**
  * 
  */
-package io.sinistral.proteus.server;
+package io.sinistral.proteus.tests.server;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
@@ -27,8 +27,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import io.restassured.http.ContentType;
-import io.sinistral.proteus.models.User;
-import io.sinistral.proteus.models.User.UserType;
+import io.sinistral.proteus.tests.models.TestUser;
+import io.sinistral.proteus.tests.models.TestUser.UserType;
  
 /*
  * import static io.restassured.RestAssured.*; import static io.restassured.matcher.RestAssuredMatchers.*; import static org.hamcrest.Matchers.*;
@@ -69,28 +69,28 @@ public class TestControllerEndpoints
 	@Test
 	public void exchangeUserJson()
 	{
-		User user = given().accept(ContentType.JSON).log().uri().when().get("tests/exchange/user/json").as(User.class);
+		TestUser user = given().accept(ContentType.JSON).log().uri().when().get("tests/exchange/user/json").as(TestUser.class);
 		assertThat(user.getId(), CoreMatchers.is(123L));
 	}
 
 	@Test
 	public void exchangeUserXml()
 	{
-		User user = given().accept(ContentType.XML).log().uri().when().get("tests/exchange/user/xml").as(User.class);
+		TestUser user = given().accept(ContentType.XML).log().uri().when().get("tests/exchange/user/xml").as(TestUser.class);
 		assertThat(user.getId(), CoreMatchers.is(123L));
 	}
 
 	@Test
 	public void responseUserJson()
 	{
-		User user = given().accept(ContentType.JSON).log().uri().when().get("tests/response/user/json").as(User.class);
+		TestUser user = given().accept(ContentType.JSON).log().uri().when().get("tests/response/user/json").as(TestUser.class);
 		assertThat(user.getId(), CoreMatchers.is(123L));
 	}
 
 	@Test
 	public void responseUserXml()
 	{
-		User user = given().accept(ContentType.XML).log().uri().when().get("tests/response/user/xml").as(User.class);
+		TestUser user = given().accept(ContentType.XML).log().uri().when().get("tests/response/user/xml").as(TestUser.class);
 		assertThat(user.getId(), CoreMatchers.is(123L));
 	}
 
@@ -115,7 +115,7 @@ public class TestControllerEndpoints
 	@Test
 	public void responseEchoUser()
 	{
-		User user = new User(101L,UserType.ADMIN);
+		TestUser user = new TestUser(101L,UserType.ADMIN);
 		  
 		given().contentType(ContentType.JSON).accept(ContentType.JSON).body(user).log().uri().when().post("tests/response/json/echo").then().statusCode(200).and().body(containsString("101"));
 
@@ -211,9 +211,9 @@ public class TestControllerEndpoints
 
 				.queryParam("optionalQueryDate", "1970-01-01T00:00:00.000+00:00")
 
-				.queryParam("queryEnum", User.UserType.ADMIN)
+				.queryParam("queryEnum", TestUser.UserType.ADMIN)
 
-				.queryParam("optionalQueryEnum", User.UserType.ADMIN)
+				.queryParam("optionalQueryEnum", TestUser.UserType.ADMIN)
 
 				.queryParam("queryIntegerList", integerList)
 
@@ -241,9 +241,9 @@ public class TestControllerEndpoints
 
 		assertThat((map.get("optionalQueryLong").toString()), CoreMatchers.is(longValue.toString()));
 
-		assertThat((map.get("optionalQueryEnum").toString()), CoreMatchers.is(User.UserType.ADMIN.name()));
+		assertThat((map.get("optionalQueryEnum").toString()), CoreMatchers.is(TestUser.UserType.ADMIN.name()));
 
-		assertThat((map.get("queryEnum").toString()), CoreMatchers.is(User.UserType.ADMIN.name()));
+		assertThat((map.get("queryEnum").toString()), CoreMatchers.is(TestUser.UserType.ADMIN.name()));
 
 		assertThat((map.get("headerString").toString()), CoreMatchers.is(stringValue));
 

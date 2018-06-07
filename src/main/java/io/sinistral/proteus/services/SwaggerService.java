@@ -116,7 +116,7 @@ public class SwaggerService   extends BaseService implements Supplier<RoutingHan
 	protected String host;
 	
 	@Inject
-	@Named("swagger.scheme")
+	@Named("swagger.schema")
 	protected String scheme;
 	
 	@Inject
